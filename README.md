@@ -17,7 +17,7 @@ Using these scripts have 3 pre-requisites:
 This script identifies the flood uuids and the test names associated to the Flood token.
 
 ```
-1kVxMpJ4z9zIckMGrZlcHJBh1S1 => Demo Flood - JMeter
+1l9n5tWn01zd1REd16zPBUbwaR3 => Demo Flood - JMeter
 1kVxMszXLAdEfOsxRj4QuUqg7ql => Demo Flood - Element
 ```
 ## get_jtl_file.py
@@ -25,8 +25,12 @@ This script identifies the flood uuids and the test names associated to the Floo
 This script downloads the *tar.gz* file associated to a flood uuid, and extracts the **jtl** file into a directory flood directory.
 
 ```
-tree flood 
-
+get_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
+Downloading https://flood-archives.s3-accelerate.amazonaws.com/1l9n5tWn-pRCq6vs7-0.tar.gz
+Extracting flood/results/results_12-03-2020-17-57-41.jtl
+```
+The results are located as follows:
+```
 flood
 └── results
     └── results_12-03-2020-17-57-41.jtl
