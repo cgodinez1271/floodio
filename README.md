@@ -34,5 +34,7 @@ flood
 1 directory, 1 file
 ```
 
+The last step is to upload the '.jtl' file into the JMeter GUI to visualize the results using any of the graphing listener or create the HTML report.
+
 Linkedin: https://www.linkedin.com/in/carlosgodinez/
 Web: https://jemeterenespanol.com
