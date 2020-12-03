@@ -26,11 +26,14 @@ This script downloads the *tar.gz* file associated to a flood uuid, and extracts
 
 ```
 get_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
+
 Downloading https://flood-archives.s3-accelerate.amazonaws.com/1l9n5tWn-pRCq6vs7-0.tar.gz
 Extracting flood/results/results_12-03-2020-17-57-41.jtl
 ```
 The results are located as follows:
 ```
+tree flood
+
 flood
 └── results
     └── results_12-03-2020-17-57-41.jtl
