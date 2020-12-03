@@ -40,5 +40,15 @@ flood
 
 The last step is to upload the '.jtl' file into the JMeter GUI to visualize the results using any of the graphing listener or create the HTML report.
 
+## Nota
+
+This script was designed to be executed on MacOS and Python 3.8.
+
+## Disclaimer
+
+This script come without warranty of any kind. Use them at your own risk. I assume no liability for the accuracy, correctness, completeness, or usefulness of any information provided by this site nor for any sort of damages using these scripts may cause.
+
 Linkedin: https://www.linkedin.com/in/carlosgodinez/
+
 Web: https://jemeterenespanol.com
+
