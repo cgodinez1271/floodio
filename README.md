@@ -20,7 +20,7 @@ This script identifies the **flood uuids** and the test-names associated to the 
 1l9n5tWn01zd1REd16zPBUbwaR3 => Demo Flood - JMeter
 1kVxMszXLAdEfOsxRj4QuUqg7ql => Demo Flood - Element
 ```
-## get_jtl_file.py
+## get_jtl.py
 
 This script downloads the *tar.gz* file associated to a *flood uuid*: 
 
