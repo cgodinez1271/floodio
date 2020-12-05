@@ -41,3 +41,4 @@ name_uuid = dict(zip(name_list, uuid_list))
 # print dictionary
 for key, value in name_uuid.items():
     print(f'{value} => {key}')
+

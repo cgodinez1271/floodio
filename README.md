@@ -20,12 +20,12 @@ This script identifies the **flood uuids** and the test-names associated to the 
 1l9n5tWn01zd1REd16zPBUbwaR3 => Demo Flood - JMeter
 1kVxMszXLAdEfOsxRj4QuUqg7ql => Demo Flood - Element
 ```
-## get_jtl.py
+## extract_jtl.py
 
 This script downloads the *tar.gz* file associated to a *flood uuid*: 
 
 ```
-./get_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
+./extract_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
 
 Downloading https://flood-archives.s3-accelerate.amazonaws.com/1l9n5tWn-pRCq6vs7-0.tar.gz
 Extracting flood/results/results_12-03-2020-17-57-41.jtl
