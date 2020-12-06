@@ -7,8 +7,8 @@ Two scripts to download the JMeter **jtl** file which is not available by defaul
 ## Requirements
 
 1. A Flood.io account (https://www.flood.io/)
-2. A Flood API access token stored in a file named **.flood_token**
-3. Adding the **Simple Data Writer** listener to the JMeter test plan. Set the *filename* to "/data/flood/results/results_${__time(MM-dd-yyyy-HH-mm-ss,)}.jtl" (so the file does not overwritten).
+2. The Flood API **access token** stored in a file named **.flood_token**
+3. Adding the **Simple Data Writer** listener to the JMeter test plan. Set the *filename* to "/data/flood/results/results_${__time(MM-dd-yyyy-HH-mm-ss,)}.jtl" (so the file does not get overwritten).
 
 ## flood_uuids.py
 
@@ -22,7 +22,7 @@ This script identifies the **flood uuids** and the test-names associated to the 
 ```
 ## extract_jtl.py
 
-This script downloads the *tar.gz* file associated to a *flood uuid*: 
+This script downloads the *tar.gz* file associated to a *flood uuid*,
 
 ```
 ./extract_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
@@ -47,8 +47,8 @@ flood
 
 The '.jtl' file can be used in 2 ways:
 
-1. load the file into JMeter GUI to visualize the results using any of the graphing listener
-2. create the HTML report
+1. load the file into JMeter GUI to visualize the results using any of the graphing listeners.
+2. create the HTML report,
 
 ## Note
 

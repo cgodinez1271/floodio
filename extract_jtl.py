@@ -16,7 +16,7 @@ def get_token(tf):
         raise SystemExit(err)
 
 
-# read flod API token
+# read flood API token
 FLOOD_API_TOKEN = get_token("./.flood_token")
 
 # parse argument uuid
