@@ -47,8 +47,8 @@ flood
 
 The '.jtl' file can be used in 2 ways:
 
-1. load the file into JMeter GUI to visualize the results using any of the graphing listeners.
-2. create the HTML report,
+1. load the file into JMeter GUI to visualize the results using any of the graphing listeners
+2. create the HTML report
 
 ## Note
 
