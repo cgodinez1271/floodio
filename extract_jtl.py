@@ -6,6 +6,21 @@ import urllib.request
 import tarfile
 from jsonpath_ng import jsonpath, parse
 import argparse
+import logging
+import time
+import sys
+import os
+import glob
+import shutil
+
+# logging configuration
+console = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
+                              "%H:%M:%S")
+console.setFormatter(formatter)
+LOG = logging.getLogger("")
+LOG.addHandler(console)
+LOG.setLevel(logging.INFO)
 
 
 def get_token(tf):
@@ -13,7 +28,8 @@ def get_token(tf):
         with open(tf) as fd:
             return fd.read().rstrip('\n')
     except FileNotFoundError as err:
-        raise SystemExit(err)
+        LOG.error(err)
+        sys.exit(1)
 
 
 # read flood API token
@@ -21,40 +37,53 @@ FLOOD_API_TOKEN = get_token("./.flood_token")
 
 # parse argument uuid
 parser = argparse.ArgumentParser()
-parser.add_argument("uuid", help="enter flood uuid")
+parser.add_argument("uuid", help="Enter flood uuid")
 args = parser.parse_args()
 
 # build URL using uuid
-URL = 'https://api.flood.io/floods/' + args.uuid + '/archives'
+URL = 'https://api.flood.io/floods/' + args.uuid
+#URL = 'https://api.flood.io/floods/' + args.uuid + '/archives'
 
 try:
     r = requests.get(URL, auth=(f'{FLOOD_API_TOKEN}', ''))
-    r.raise_for_status()
-except requests.exceptions.HTTPError as err:
-    raise SystemExit(err)
+except requests.exceptions.RequestException as err:
+    LOG.error(err)
+    sys.exit(1)
+LOG.debug(json.dumps(r.json(), indent=4, sort_keys=True))
+# capture 'Archive Results' tar file name
+FILEURL = json.loads(r.text)['_embedded']['archives'][0]['href']
+LOG.debug(FILEURL)
 
-# use the json module to load response
-json_data = json.loads(r.text)
+# process 'Archive Results' tar file
+try:
+    r = requests.get(FILEURL, stream=True)
+except requests.exceptions.RequestException as err:
+    LOG.error(err)
+    sys.exit(1)
+else:
+    # local destinantion file
+    tar_fname = args.uuid + '.tar.gz'
+    try:
+        with open(tar_fname, 'wb') as ft:
+            ft.write(r.raw.read())
+    except Exception as err:
+        LOG.error(err)
+        sys.exit(1)
+    else:
+        tar_dir = time.strftime("%Y-%m-%d_%T")
+        with tarfile.open(tar_fname) as ft:
+            ft.extractall(tar_dir)
+        LOG.info(f'Extracted {tar_fname} -> {tar_dir}')
 
-# extract gz.tar file URL
-jsonpath_expr = parse('*.archives[*].href')
-archive_url = jsonpath_expr.find(json_data)
+        # relocate files for easy access
+        if os.path.isdir(tar_dir):
+            for f in glob.glob(f'{tar_dir}/flood/files/*'):
+                shutil.copy(f, tar_dir)
+            for f in glob.glob(f'{tar_dir}/flood/results/*'):
+                shutil.copy(f, tar_dir)
 
-# extract gz.tar filename
-fname = archive_url[0].value.split("/")[-1]
+        # store tar file and ymal file
+        shutil.move(tar_fname, f'{tar_dir}/flood')
+#        shutil.copy(args.ymlfile, tar_dir)
 
-# download tar.gz file
-print(f'Downloading {archive_url[0].value}')
-urllib.request.urlretrieve(archive_url[0].value, fname)
-
-# extract jtl file if any
-if fname.endswith("tar.gz"):
-    t = tarfile.open(fname, "r:gz")
-    for member in t.getmembers():
-        if ".jtl" in member.name:
-            print(f'Extracting {member.name}')
-            t.extract(member, path=".")
-    t.close()
-
-# TODO: what if the 'results.jtl' files does not exist?
-# TODO: remove tar.gz file?
+        LOG.info(f'Results files: {tar_dir}')
