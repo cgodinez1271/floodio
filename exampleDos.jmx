@@ -21,7 +21,7 @@
         <stringProp name="ThreadGroup.num_threads">${__P(threads,1)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__P(rampup,1)}</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">${__P(duration,120)}</stringProp>
+        <stringProp name="ThreadGroup.duration">${__P(duration,60)}</stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
@@ -33,8 +33,7 @@
           <stringProp name="RESPONSE_MESSAGE">OK</stringProp>
           <stringProp name="REQUEST_DATA">Dummy Sampler used to simulate requests and responses
 without actual network activity. This helps debugging tests.</stringProp>
-          <stringProp name="RESPONSE_DATA">Dummy Sampler used to simulate requests and responses
-without actual network activity. This helps debugging tests.</stringProp>
+          <stringProp name="RESPONSE_DATA">${__FileToString(/data/flood/files/sample.txt,,)}</stringProp>
           <stringProp name="RESPONSE_TIME">${__Random(1000,5000)}</stringProp>
           <stringProp name="LATENCY">${__Random(1,50)}</stringProp>
           <stringProp name="CONNECT">${__Random(1,5)}</stringProp>
@@ -47,11 +46,14 @@ without actual network activity. This helps debugging tests.</stringProp>
           </ConstantTimer>
           <hashTree/>
         </hashTree>
-        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="false">
+        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
-          <stringProp name="script">log.info(&quot;LOOP : &quot;+ vars.getIteration());</stringProp>
+          <stringProp name="script">log.info(&quot;------ sample.txt ------&quot;)
+File myFile = new File(&quot;/data/flood/files/sample.txt&quot;)
+def fileContent = myFile.text
+log.info(&quot;Read from file: &quot; + fileContent)</stringProp>
           <stringProp name="scriptLanguage">groovy</stringProp>
         </JSR223PostProcessor>
         <hashTree/>

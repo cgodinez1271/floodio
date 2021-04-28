@@ -1,0 +1,27 @@
+---
+execution:
+  - scenario: baseline
+    concurrency: 10
+    ramp-up: 0s
+    hold-for: 5m
+    locations:
+      us-east-1: 2
+    locations-weighted: false
+    files:
+      - products.csv
+
+scenarios:
+  baseline:
+    script: acuvue_shop_flood.jmx
+
+modules:
+  cloud:
+    project: Magento - MyAcuvue
+    test: 04-15 Baseline
+  console:
+    disable: true
+  jmeter:
+    system-properties:
+      jmeter.save.saveservice.response_message: true
+
+provisioning: cloud
