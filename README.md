@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Two scripts to download the JMeter **jtl** file which is not available by default. These scripts are built using the Flood API V2. See the vendor documentation [here](https://github.com/flood-io/api-docs). The '.jtl' file is created by adding a listener to the JMeter test plan.
+Flood.io CLI scripts.
 
 ## Requirements
 
@@ -10,49 +10,38 @@ Two scripts to download the JMeter **jtl** file which is not available by defaul
 2. The Flood API **access token** stored in a file named **.flood_token**
 3. Adding the **Simple Data Writer** listener to the JMeter test plan. Set the *filename* to "/data/flood/results/results_${__time(MM-dd-yyyy-HH-mm-ss,)}.jtl" (so the file does not get overwritten).
 
-## flood_uuids.py
+## frun.py
+
+This script executes a test in the Flood.io cloud
+
+```
+./frun.py fzt.yml
+```
+
+## fuuids.py
 
 This script identifies the **flood uuids** and the test-names associated to the Flood token.
 
 ```
 ./flood_uuids.py
-
-1l9n5tWn01zd1REd16zPBUbwaR3 => Demo Flood - JMeter
-1kVxMszXLAdEfOsxRj4QuUqg7ql => Demo Flood - Element
 ```
-## extract_jtl.py
+## fresults.py
 
-This script downloads the *tar.gz* file associated to a *flood uuid*,
+This script downloads files associated to a *flood uuid*.
 
 ```
-./extract_jtl.py 1l9n5tWn01zd1REd16zPBUbwaR3
-
-Downloading https://flood-archives.s3-accelerate.amazonaws.com/1l9n5tWn-pRCq6vs7-0.tar.gz
-Extracting flood/results/results_12-03-2020-17-57-41.jtl
+./fresults.py <flood_uuid>
 ```
 
-Extracts the **jtl** file into a directory:
+## freport.py
+
+This script downloads test results associated to a *flood uuid*.
 
 ```
-tree flood
-
-flood
-└── results
-    └── results_12-03-2020-17-57-41.jtl
-
-1 directory, 1 file
+./freport.py <flood_uuid>
 ```
 
-## Using the '.jtl' file
-
-The '.jtl' file can be used in 2 ways:
-
-1. load the file into JMeter GUI to visualize the results using any of the graphing listeners
-2. create the HTML report
-
-## Note
-
-This script was designed to be executed on MacOS and Python 3.8.
+These scripts was designed to be executed on MacOS and Python 3.8.
 
 ## Disclaimer
 
