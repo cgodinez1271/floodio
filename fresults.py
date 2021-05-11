@@ -16,7 +16,8 @@ from datetime import datetime
 
 # logging configuration
 console = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
+formatter = logging.Formatter(
+    "%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
 console.setFormatter(formatter)
 LOG = logging.getLogger("")
 LOG.addHandler(console)
@@ -82,7 +83,7 @@ else:
         LOG.error(err)
         sys.exit(1)
     else:
-        tar_dir = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")
+        tar_dir = args.uuid
         with tarfile.open(tar_fname) as ft:
             ft.extractall(tar_dir)
         LOG.info(f"Extracted {tar_fname} -> {tar_dir}")
@@ -96,6 +97,5 @@ else:
 
         # store tar file and ymal file
         shutil.move(tar_fname, f"{tar_dir}/flood")
-        #        shutil.copy(args.ymlfile, tar_dir)
 
         LOG.info(f"Results files: {tar_dir}")
