@@ -38,20 +38,32 @@ FLOOD_API_TOKEN = get_token("./.flood_token")
 # parse argument uuid
 parser = argparse.ArgumentParser()
 parser.add_argument("uuid", help="Enter flood uuid")
+parser.add_argument(
+    "-d",
+    "--debug",
+    help="Print debugging statements",
+    action="store_true",
+)
 args = parser.parse_args()
+
+""" set debug level per cli argument """
+if args.debug:
+    LOG.setLevel(logging.DEBUG)
 
 # build URL using uuid
 URL = "https://api.flood.io/floods/" + args.uuid
-# URL = 'https://api.flood.io/floods/' + args.uuid + '/archives'
 
 try:
     r = requests.get(URL, auth=(f"{FLOOD_API_TOKEN}", ""))
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)
+
 LOG.debug(json.dumps(r.json(), indent=4, sort_keys=True))
+
 # capture 'Archive Results' tar file name
 FILEURL = json.loads(r.text)["_embedded"]["archives"][0]["href"]
+
 LOG.debug(FILEURL)
 
 # process 'Archive Results' tar file

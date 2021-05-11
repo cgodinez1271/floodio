@@ -23,10 +23,13 @@ import yaml
 
 # TODO: configure multiple grids
 # TODO: gracefully terminate flood
+# TODO: artifacts directory as option
+# TODO: monitor grip performance
 
 """ Configure logger """
 console = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
+formatter = logging.Formatter(
+    "%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
 console.setFormatter(formatter)
 LOG = logging.getLogger("")
 LOG.addHandler(console)
@@ -60,13 +63,15 @@ def load_yml(config_file):
 
 
 def flood_files(files):
-    """ build flood files list, exit if any file is missing """
+    """ build flood files list, exit if any file is missing
+        or have the wrong extensions
+    """
     rl = []
     for f in files:
-        if os.path.isfile(f):
+        if os.path.isfile(f) and f.lower().endswith(('.jmx', '.csv', '.txt', '.dat')):
             rl.append(eval(f'("flood_files[]", open("{f}","rb"))'))
         else:
-            LOG.error(f"File {f} not found. Bye")
+            LOG.error(f"File {f} not found or has the wrong extension. Bye")
             sys.exit(1)
     return rl
 
@@ -88,6 +93,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+""" set debug level per cli argument """
 if args.debug:
     LOG.setLevel(logging.DEBUG)
 
@@ -100,8 +106,8 @@ cnfg = load_yml(args.ymlfile)
 LOG.info(f"Executing with config: {args.ymlfile}")
 
 """ setting defaults """
-cnfg.setdefault("provisioning", 6)  # minutes it takes for grids to start
-cnfg.setdefault("frequency", 30)  # seconds between status reports
+cnfg.setdefault("provisioning", 6)  # the time it takes for grids to start
+cnfg.setdefault("frequency", 30)  # elapse seconds between status reports
 
 """ flood defaults """
 cnfg.setdefault("tool", "jmeter")
@@ -133,7 +139,6 @@ schema = {
         "schema": {
             "required": True,
             "type": "string",
-            "regex": "^[\w_-]*\.(jmx|csv|zip|txt)$",
         },
     },
     "override_parameters": {
@@ -149,7 +154,7 @@ else:
     LOG.error(f"Configuration validation error: {v.errors}")
     sys.exit(1)
 
-# build POST flood command
+""" build POST flood command """
 config = {
     "flood[tool]": cnfg["tool"],
     "flood[privacy]": cnfg["privacy"],
@@ -165,7 +170,7 @@ config = {
     "flood[grids][][stop_after]": cnfg["grids"]["stop_after"],
 }
 
-# add 'override parameters' if available
+""" add 'override parameters' if available """
 if "override_parameters" in cnfg:
     config["flood[override_parameters]"] = " ".join(
         [f"-{p}" for p in cnfg["override_parameters"]]
@@ -175,11 +180,13 @@ LOG.debug(json.dumps(config, indent=2))
 
 """ build files """
 files = flood_files(cnfg["flood_files"])
+
 LOG.debug(f"flood files {files}")
 
 """ submit POST request """
 try:
-    r = requests.post(URL, files=files, data=config, auth=(f"{FLOOD_API_TOKEN}", ""))
+    r = requests.post(URL, files=files, data=config,
+                      auth=(f"{FLOOD_API_TOKEN}", ""))
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)
@@ -187,13 +194,19 @@ except requests.exceptions.RequestException as err:
 LOG.debug(json.dumps(r.json(), indent=4, sort_keys=True))
 
 """ extract flood information """
-flood_uuid = json.loads(r.text)["uuid"]
+try:
+    flood_uuid = json.loads(r.text)["uuid"]
+except KeyError:
+    LOG.err(json.loads(r.text))
+    sys.exit(1)
+
 LOG.info(f"Submitted Flood: {flood_uuid}")
 
 """ wait for flood to finish """
 while True:
     try:
-        r = requests.get(URL + "/" + flood_uuid, auth=(f"{FLOOD_API_TOKEN}", ""))
+        r = requests.get(URL + "/" + flood_uuid,
+                         auth=(f"{FLOOD_API_TOKEN}", ""))
     except requests.exceptions.RequestException as err:
         LOG.error(err)
         sys.exit(1)
@@ -217,20 +230,20 @@ if json.loads(r.text)["status"] == "stopped":
     sys.exit(1)
 
 LOG.info(f"\nstarted: {flood_beg} - finished: {flood_end}")
-LOG.info(f'\nTo share results "Enable Secret Link" https://app.flood.io/{flood_uuid}')
+LOG.info(
+    f'\nTo share results "Enable Secret Link" https://app.flood.io/{flood_uuid}')
 
-# capture 'Archive Results' tar filename
+""" capture 'Archive Results' tar filename """
 FILEURL = json.loads(r.text)["_embedded"]["archives"][0]["href"]
 LOG.debug(FILEURL)
 
-# process 'Archive Results' tar file
+""" process 'Archive Results' tar file """
 try:
     r = requests.get(FILEURL, stream=True)
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)
 else:
-    # local destinantion file
     tar_fname = flood_uuid + ".tar.gz"
     try:
         with open(tar_fname, "wb") as ft:
@@ -239,19 +252,20 @@ else:
         LOG.error(err)
         sys.exit(1)
     else:
-        tar_dir = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")
+        tar_dir = flood_uuid
         with tarfile.open(tar_fname) as ft:
             ft.extractall(tar_dir)
         LOG.debug(f"Extracted {tar_fname} -> {tar_dir}")
 
-        # relocate files for easy access
         if os.path.isdir(tar_dir):
-            for f in glob.glob(f"{tar_dir}/flood/files/*"):
+            """ save test input files """
+            for f in cnfg["flood_files"]:
                 shutil.copy(f, tar_dir)
+            """ relocate result files for easy access """
             for f in glob.glob(f"{tar_dir}/flood/results/*"):
                 shutil.copy(f, tar_dir)
 
-        # store tar file and ymal file
+        """ store tar file and ymal file in tar_dir """
         shutil.move(tar_fname, f"{tar_dir}/flood")
         shutil.copy(args.ymlfile, tar_dir)
 
