@@ -9,11 +9,12 @@ duration: 300 # seconds
 grids:
   region: us-east-1
 
-override_parameters:
-  - Jjmeter.save.saveservice.response_message=true
+# list of values
+parameters:
+  - jmeter.save.saveservice.response_message=true
 
 # list of values
-flood_files:
+files:
   - acuvue_shop_flood.jmx
   - products.csv
 #

@@ -116,9 +116,6 @@ cnfg.setdefault("rampup", 0)
 cnfg.setdefault("grids", {}).setdefault("infrastructure", "demand")
 cnfg.setdefault("grids", {}).setdefault("instance_type", "m5.xlarge")
 cnfg.setdefault("grids", {}).setdefault("instance_quantity", 1)
-# leap of faith: assume the duration is available
-if "stop_after" not in cnfg and "duration" in cnfg:
-    cnfg["grids"]["stop_after"] = cnfg["duration"] / 60 + cnfg["provisioning"]
 
 LOG.debug(json.dumps(cnfg, indent=2))
 
@@ -134,17 +131,17 @@ schema = {
             "region": {"type": "string", "empty": False},
         },
     },
-    "flood_files": {
+    "files": {
         "type": "list",
         "schema": {
             "required": True,
             "type": "string",
         },
     },
-    "override_parameters": {
+    "parameters": {
         "type": "list",
-        "schema": {"type": "string", "regex": "^(J|D)[\w._-]*=[/\\w._-]*$"},
-    },
+        "schema": {"type": "string", "regex": '^[\w._-]*=[//\w._-]*$'}
+    }
 }
 
 v = Validator(schema, allow_unknown=True)
@@ -153,6 +150,9 @@ if v.validate(cnfg):
 else:
     LOG.error(f"Configuration validation error: {v.errors}")
     sys.exit(1)
+
+""" set up the stop_after """
+cnfg["grids"]["stop_after"] = cnfg["duration"] / 60 + cnfg["provisioning"]
 
 """ build POST flood command """
 config = {
@@ -171,15 +171,15 @@ config = {
 }
 
 """ add 'override parameters' if available """
-if "override_parameters" in cnfg:
+if "parameters" in cnfg:
     config["flood[override_parameters]"] = " ".join(
-        [f"-{p}" for p in cnfg["override_parameters"]]
+        [f"-J{p}" for p in cnfg["parameters"]]
     )
 
 LOG.debug(json.dumps(config, indent=2))
 
 """ build files """
-files = flood_files(cnfg["flood_files"])
+files = flood_files(cnfg["files"])
 
 LOG.debug(f"flood files {files}")
 
@@ -259,7 +259,7 @@ else:
 
         if os.path.isdir(tar_dir):
             """ save test input files """
-            for f in cnfg["flood_files"]:
+            for f in cnfg["files"]:
                 shutil.copy(f, tar_dir)
             """ relocate result files for easy access """
             for f in glob.glob(f"{tar_dir}/flood/results/*"):
