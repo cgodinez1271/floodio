@@ -8,15 +8,16 @@ Flood.io CLI scripts.
 
 1. A Flood.io account (https://www.flood.io/)
 2. The Flood API **access token** stored in a file named **.flood_token**
-3. Adding the **Simple Data Writer** listener to the JMeter test plan. Set the *filename* to "/data/flood/results/results_${__time(MM-dd-yyyy-HH-mm-ss,)}.jtl" (so the file does not get overwritten).
 
 ## frun.py
 
 This script executes a test in the Flood.io cloud
 
 ```
-./frun.py fzt.yml
+./frun.py basic.yml
 ```
+
+NOTE: this script uses basic.jmx and basic.csv
 
 ## fuuids.py
 
@@ -25,6 +26,7 @@ This script identifies the **flood uuids** and the test-names associated to the 
 ```
 ./flood_uuids.py
 ```
+
 ## fresults.py
 
 This script downloads files associated to a *flood uuid*.
