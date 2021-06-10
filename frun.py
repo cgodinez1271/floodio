@@ -28,8 +28,7 @@ import yaml
 
 """ Configure logger """
 console = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
+formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
 console.setFormatter(formatter)
 LOG = logging.getLogger("")
 LOG.addHandler(console)
@@ -63,12 +62,12 @@ def load_yml(config_file):
 
 
 def flood_files(files):
-    """ build flood files list, exit if any file is missing
-        or have the wrong extensions
+    """build flood files list, exit if any file is missing
+    or have the wrong extensions
     """
     rl = []
     for f in files:
-        if os.path.isfile(f) and f.lower().endswith(('.jmx', '.csv', '.txt', '.dat')):
+        if os.path.isfile(f) and f.lower().endswith((".jmx", ".csv", ".txt", ".dat")):
             rl.append(eval(f'("flood_files[]", open("{f}","rb"))'))
         else:
             LOG.error(f"File {f} not found or has the wrong extension. Bye")
@@ -116,9 +115,6 @@ cnfg.setdefault("rampup", 0)
 cnfg.setdefault("grids", {}).setdefault("infrastructure", "demand")
 cnfg.setdefault("grids", {}).setdefault("instance_type", "m5.xlarge")
 cnfg.setdefault("grids", {}).setdefault("instance_quantity", 1)
-# leap of faith: assume the duration is available
-if "stop_after" not in cnfg and "duration" in cnfg:
-    cnfg["grids"]["stop_after"] = cnfg["duration"] / 60 + cnfg["provisioning"]
 
 LOG.debug(json.dumps(cnfg, indent=2))
 
@@ -134,16 +130,16 @@ schema = {
             "region": {"type": "string", "empty": False},
         },
     },
-    "flood_files": {
+    "files": {
         "type": "list",
         "schema": {
             "required": True,
             "type": "string",
         },
     },
-    "override_parameters": {
+    "parameters": {
         "type": "list",
-        "schema": {"type": "string", "regex": "^(J|D)[\w._-]*=[/\\w._-]*$"},
+        "schema": {"type": "string", "regex": "^[\w._-]*=[ '//\w._,()-]*$"},
     },
 }
 
@@ -153,6 +149,9 @@ if v.validate(cnfg):
 else:
     LOG.error(f"Configuration validation error: {v.errors}")
     sys.exit(1)
+
+""" set up the stop_after """
+cnfg["grids"]["stop_after"] = cnfg["duration"] / 60 + cnfg["provisioning"]
 
 """ build POST flood command """
 config = {
@@ -171,22 +170,21 @@ config = {
 }
 
 """ add 'override parameters' if available """
-if "override_parameters" in cnfg:
+if "parameters" in cnfg:
     config["flood[override_parameters]"] = " ".join(
-        [f"-{p}" for p in cnfg["override_parameters"]]
+        [f"-J{p}" for p in cnfg["parameters"]]
     )
 
 LOG.debug(json.dumps(config, indent=2))
 
 """ build files """
-files = flood_files(cnfg["flood_files"])
+files = flood_files(cnfg["files"])
 
 LOG.debug(f"flood files {files}")
 
 """ submit POST request """
 try:
-    r = requests.post(URL, files=files, data=config,
-                      auth=(f"{FLOOD_API_TOKEN}", ""))
+    r = requests.post(URL, files=files, data=config, auth=(f"{FLOOD_API_TOKEN}", ""))
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)
@@ -205,8 +203,7 @@ LOG.info(f"Submitted Flood: {flood_uuid}")
 """ wait for flood to finish """
 while True:
     try:
-        r = requests.get(URL + "/" + flood_uuid,
-                         auth=(f"{FLOOD_API_TOKEN}", ""))
+        r = requests.get(URL + "/" + flood_uuid, auth=(f"{FLOOD_API_TOKEN}", ""))
     except requests.exceptions.RequestException as err:
         LOG.error(err)
         sys.exit(1)
@@ -215,7 +212,7 @@ while True:
 
     LOG.info(f"{json.loads(r.text)['status']} ...")
 
-    if json.loads(r.text)["status"] in ["finished", "stopped"]:
+    if json.loads(r.text)["status"] in ["finished", "stopped", "problem"]:
         break
     else:
         time.sleep(cnfg["frequency"])
@@ -225,13 +222,13 @@ LOG.debug(json.dumps(r.json(), indent=4, sort_keys=True))
 flood_beg = json.loads(r.text)["started"]
 flood_end = json.loads(r.text)["stopped"]
 
-if json.loads(r.text)["status"] == "stopped":
+""" abort execution if status is not finished """
+if json.loads(r.text)["status"] in ["stopped", "problem"]:
     LOG.error(f"Test was STOPPED at {flood_end}")
     sys.exit(1)
 
 LOG.info(f"\nstarted: {flood_beg} - finished: {flood_end}")
-LOG.info(
-    f'\nTo share results "Enable Secret Link" https://app.flood.io/{flood_uuid}')
+LOG.info(f'\nTo share results "Enable Secret Link" https://app.flood.io/{flood_uuid}')
 
 """ capture 'Archive Results' tar filename """
 FILEURL = json.loads(r.text)["_embedded"]["archives"][0]["href"]
@@ -252,21 +249,27 @@ else:
         LOG.error(err)
         sys.exit(1)
     else:
-        tar_dir = flood_uuid
-        with tarfile.open(tar_fname) as ft:
-            ft.extractall(tar_dir)
-        LOG.debug(f"Extracted {tar_fname} -> {tar_dir}")
+        """ create artifacts directory if it's configured """
+        if artifacts_dir := cnfg.get("settings", {}).get("artifacts-dir"):
+            os.makedirs(artifacts_dir, exist_ok=True)
+            artifacts_dir = artifacts_dir + "/" + flood_uuid
+        else:
+            artifacts_dir = "flood-results"
 
-        if os.path.isdir(tar_dir):
+        with tarfile.open(tar_fname) as ft:
+            ft.extractall(artifacts_dir)
+        LOG.debug(f"Extracted {tar_fname} -> {artifacts_dir}")
+
+        if os.path.isdir(artifacts_dir):
             """ save test input files """
-            for f in cnfg["flood_files"]:
-                shutil.copy(f, tar_dir)
+            for f in cnfg["files"]:
+                shutil.copy(f, artifacts_dir)
             """ relocate result files for easy access """
-            for f in glob.glob(f"{tar_dir}/flood/results/*"):
-                shutil.copy(f, tar_dir)
+            for f in glob.glob(f"{artifacts_dir}/flood/results/*"):
+                shutil.copy(f, artifacts_dir)
 
         """ store tar file and ymal file in tar_dir """
-        shutil.move(tar_fname, f"{tar_dir}/flood")
-        shutil.copy(args.ymlfile, tar_dir)
+        shutil.move(tar_fname, f"{artifacts_dir}/flood")
+        shutil.copy(args.ymlfile, artifacts_dir)
 
-        LOG.info(f"Results directory: {tar_dir}")
+        LOG.info(f"Results directory: {artifacts_dir}")

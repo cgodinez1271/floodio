@@ -1,0 +1,21 @@
+---
+# scalars
+project: XENA JPM Integration
+name: Basic Test
+threads: 10 # Vusers
+rampup: 5 # sec
+duration: 60 # sec
+
+# list_of_values
+parameters:
+  - jmeter.save.saveservice.response_message=true
+  - sleeptime=1000 # miliseconds  
+
+# dictionary
+grids:
+  region: us-east-1
+
+# list of values
+files:
+  - basic.jmx
+  - basic.csv

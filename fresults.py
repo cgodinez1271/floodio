@@ -88,14 +88,11 @@ else:
             ft.extractall(tar_dir)
         LOG.info(f"Extracted {tar_fname} -> {tar_dir}")
 
-        # relocate files for easy access
+        # relocate results file
         if os.path.isdir(tar_dir):
-            for f in glob.glob(f"{tar_dir}/flood/files/*"):
-                shutil.copy(f, tar_dir)
             for f in glob.glob(f"{tar_dir}/flood/results/*"):
                 shutil.copy(f, tar_dir)
-
-        # store tar file and ymal file
+        # store tar file
         shutil.move(tar_fname, f"{tar_dir}/flood")
 
         LOG.info(f"Results files: {tar_dir}")
