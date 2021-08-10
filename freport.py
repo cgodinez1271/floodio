@@ -1,47 +1,60 @@
 #!/usr/bin/env python
 
-import json
-import requests
-import urllib.request
-import tarfile
-from jsonpath_ng import jsonpath, parse
 import argparse
-import logging
-import time
-import sys
-import os
 import glob
+import json
+import logging
+import os
 import shutil
+import sys
+import tarfile
+import time
+from pprint import pprint
+
+from cerberus import Validator
+
+import requests
+
+import yaml
 
 # logging configuration
 console = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
-                              "%H:%M:%S")
+formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
 console.setFormatter(formatter)
 LOG = logging.getLogger("")
 LOG.addHandler(console)
 LOG.setLevel(logging.INFO)
 
 
-def get_token(tf):
+def get_token():
+    """ Read token homedir """
+    home = os.path.expanduser("~")
+
+    if os.path.isfile(f"{home}/.fzt-rc"):
+        tf = f"{home}/.fzt-rc"
+    else:
+        tf = "./.fzt-rc"
+
     try:
         with open(tf) as fd:
-            return fd.read().rstrip('\n')
-    except FileNotFoundError as err:
+            return fd.read().strip("\n")
+    except OSError as err:
         LOG.error(err)
         sys.exit(1)
 
 
 # read flood API token
-FLOOD_API_TOKEN = get_token("./.flood_token")
+FLOOD_API_TOKEN = get_token()
 
 # parse argument uuid
 parser = argparse.ArgumentParser()
 parser.add_argument("uuid", help="Enter flood uuid")
-parser.add_argument('-d', '--debug',
-                    help="Print debugging statements",
-                    action="store_true",
-                    )
+parser.add_argument(
+    "-d",
+    "--debug",
+    help="Print debugging statements",
+    action="store_true",
+)
 args = parser.parse_args()
 
 if args.debug:
@@ -49,10 +62,10 @@ if args.debug:
 
 # build URL using uuid
 # URL='https://api.flood.io/floods/' + args.uuid
-URL = 'https://api.flood.io/floods/' + args.uuid + '/report'
+URL = "https://api.flood.io/floods/" + args.uuid + "/report"
 
 try:
-    r = requests.get(URL, auth=(f'{FLOOD_API_TOKEN}', ''))
+    r = requests.get(URL, auth=(f"{FLOOD_API_TOKEN}", ""))
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)

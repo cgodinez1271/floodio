@@ -1,40 +1,44 @@
 #!/usr/bin/env python
 
-import json
-import requests
-import urllib.request
-import tarfile
-from jsonpath_ng import jsonpath, parse
 import argparse
-import logging
-import time
-import sys
-import os
 import glob
+import json
+import logging
+import os
 import shutil
-from datetime import datetime
+import sys
+import tarfile
 
-# logging configuration
+import requests
+
+""" Configure logger """
 console = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
+formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s", "%H:%M:%S")
 console.setFormatter(formatter)
 LOG = logging.getLogger("")
 LOG.addHandler(console)
 LOG.setLevel(logging.INFO)
 
 
-def get_token(tf):
+def get_token():
+    """ Read token homedir """
+    home = os.path.expanduser("~")
+
+    if os.path.isfile(f"{home}/.fzt-rc"):
+        tf = f"{home}/.fzt-rc"
+    else:
+        tf = "./.fzt-rc"
+
     try:
         with open(tf) as fd:
-            return fd.read().rstrip("\n")
-    except FileNotFoundError as err:
+            return fd.read().strip("\n")
+    except OSError as err:
         LOG.error(err)
         sys.exit(1)
 
 
 # read flood API token
-FLOOD_API_TOKEN = get_token("./.flood_token")
+FLOOD_API_TOKEN = get_token()
 
 # parse argument uuid
 parser = argparse.ArgumentParser()
@@ -83,16 +87,17 @@ else:
         LOG.error(err)
         sys.exit(1)
     else:
-        tar_dir = args.uuid
+        artifacts_dir = "flood-results"
+
         with tarfile.open(tar_fname) as ft:
-            ft.extractall(tar_dir)
-        LOG.info(f"Extracted {tar_fname} -> {tar_dir}")
+            ft.extractall(artifacts_dir)
+        LOG.info(f"Extracted {tar_fname} -> {artifacts_dir}")
 
         # relocate results file
-        if os.path.isdir(tar_dir):
-            for f in glob.glob(f"{tar_dir}/flood/results/*"):
-                shutil.copy(f, tar_dir)
+        if os.path.isdir(artifacts_dir):
+            for f in glob.glob(f"{artifacts_dir}/flood/results/*"):
+                shutil.copy(f, artifacts_dir)
         # store tar file
-        shutil.move(tar_fname, f"{tar_dir}/flood")
+        shutil.move(tar_fname, f"{artifacts_dir}/flood")
 
-        LOG.info(f"Results files: {tar_dir}")
+        LOG.info(f"Results files: {artifacts_dir}")

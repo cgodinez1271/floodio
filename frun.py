@@ -9,7 +9,7 @@ import shutil
 import sys
 import tarfile
 import time
-from datetime import datetime
+from pprint import pprint
 
 from cerberus import Validator
 
@@ -17,13 +17,13 @@ import requests
 
 import yaml
 
+
 # TODO: Jenkins: pass-fail criteria as related to Jenkins
 # TODO: Jenkins: store results location
 # TODO: Jenkins: token location
 
 # TODO: configure multiple grids
 # TODO: gracefully terminate flood
-# TODO: artifacts directory as option
 # TODO: monitor grip performance
 
 """ Configure logger """
@@ -41,12 +41,19 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
-def get_token(tf):
-    """ Read token from current location """
+def get_token():
+    """ Read token homedir """
+    home = os.path.expanduser("~")
+
+    if os.path.isfile(f"{home}/.fzt-rc"):
+        tf = f"{home}/.fzt-rc"
+    else:
+        tf = "./.fzt-rc"
+
     try:
         with open(tf) as fd:
             return fd.read().strip("\n")
-    except FileNotFoundError as err:
+    except OSError as err:
         LOG.error(err)
         sys.exit(1)
 
@@ -76,7 +83,7 @@ def flood_files(files):
 
 
 """ read flood API token """
-FLOOD_API_TOKEN = get_token("./.flood_token")
+FLOOD_API_TOKEN = get_token()
 
 URL = "https://api.flood.io/floods"
 # URL = 'https://api.flood.io/api/v3/floods'
@@ -175,7 +182,7 @@ if "parameters" in cnfg:
         [f"-J{p}" for p in cnfg["parameters"]]
     )
 
-LOG.debug(json.dumps(config, indent=2))
+LOG.debug(pprint(config))
 
 """ build files """
 files = flood_files(cnfg["files"])
@@ -184,7 +191,17 @@ LOG.debug(f"flood files {files}")
 
 """ submit POST request """
 try:
-    r = requests.post(URL, files=files, data=config, auth=(f"{FLOOD_API_TOKEN}", ""))
+    r = requests.post(
+        URL,
+        files=files,
+        data=config,
+        auth=(f"{FLOOD_API_TOKEN}", ""),
+    )
+    r.raise_for_status()
+except requests.exceptions.HTTPError as err:
+    LOG.debug(f"Post response: {r.text}")
+    LOG.error(err)
+    sys.exit(1)
 except requests.exceptions.RequestException as err:
     LOG.error(err)
     sys.exit(1)
